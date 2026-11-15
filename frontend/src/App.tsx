@@ -29,6 +29,7 @@ export default function App() {
   const [variable, setVariable] = useState<VarKey>("temp");
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem("trend-detective-theme");
     return saved === "dark" ? "dark" : "light";
@@ -38,6 +39,13 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("trend-detective-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const updateHeaderState = () => setIsScrolled(window.scrollY > 12);
+    updateHeaderState();
+    window.addEventListener("scroll", updateHeaderState, { passive: true });
+    return () => window.removeEventListener("scroll", updateHeaderState);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +72,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
+      <header className={`topbar${isScrolled ? " topbar-scrolled" : ""}`}>
         <div className="topbar-inner">
           <div className="brand-lockup">
             <div>
