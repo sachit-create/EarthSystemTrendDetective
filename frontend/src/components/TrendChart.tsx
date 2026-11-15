@@ -23,14 +23,18 @@ interface Props {
   data: Dataset;
   variable: VarKey;
   place: string | null;
+  theme: "light" | "dark";
 }
 
-export default function TrendChart({ data, variable, place }: Props) {
+export default function TrendChart({ data, variable, place, theme }: Props) {
   if (!place) {
     return (
-      <div className="rounded-xl bg-slate-900 p-4">
-        <h3 className="text-lg font-semibold">Click a place on the map</h3>
-        <p className="mt-2 text-sm text-slate-400">Its yearly anomaly chart and trend will appear here.</p>
+      <div className="chart-card chart-empty">
+        <div>
+          <div className="empty-icon">↗</div>
+          <h3>Click a place on the map</h3>
+          <p>Its yearly anomaly chart and trend will appear here.</p>
+        </div>
       </div>
     );
   }
@@ -39,10 +43,19 @@ export default function TrendChart({ data, variable, place }: Props) {
   const m = META[variable];
   const years = data.period[1] - data.period[0];
 
+  const chartText = theme === "dark" ? "#aab3c2" : "#687385";
+    const chartGrid = theme === "dark" ? "#303744" : "#e1e7ef";
+    const chartLine = theme === "dark" ? "#e8eaed" : "#202124";
+
   return (
-    <div className="rounded-xl bg-slate-900 p-4">
-      <h3 className="text-lg font-semibold">{place}: {m.label} anomaly</h3>
-      <div className="mt-3">
+    <div className="chart-card">
+      <div className="section-heading">
+        <div>
+          <h3 className="section-title">{place}: {m.label} anomaly</h3>
+          <p className="section-subtitle">Year-by-year departure from the long-term average</p>
+        </div>
+      </div>
+      <div className="chart-wrap">
         <Chart
           type="bar"
           data={{
@@ -59,7 +72,7 @@ export default function TrendChart({ data, variable, place }: Props) {
                 type: "line" as const,
                 label: "Sen's slope trend",
                 data: senTrendLine(p.years, r.anomaly, r.slope_per_year),
-                borderColor: "#ffffff",
+                borderColor: chartLine,
                 borderDash: [6, 4],
                 borderWidth: 2,
                 pointRadius: 0,
@@ -68,19 +81,19 @@ export default function TrendChart({ data, variable, place }: Props) {
             ],
           }}
           options={{
-            plugins: { legend: { labels: { color: "#94a3b8" } } },
+            plugins: { legend: { labels: { color: chartText } } },
             scales: {
-              x: { ticks: { color: "#94a3b8", maxTicksLimit: 8 }, grid: { color: "#1e293b" } },
+              x: { ticks: { color: chartText, maxTicksLimit: 8 }, grid: { color: chartGrid } },
               y: {
-                ticks: { color: "#94a3b8" },
-                grid: { color: "#334155" },
-                title: { display: true, text: `Anomaly (${m.unit})`, color: "#94a3b8" },
+                ticks: { color: chartText },
+                grid: { color: chartGrid },
+                title: { display: true, text: `Anomaly (${m.unit})`, color: chartText },
               },
             },
           }}
         />
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-slate-300">
+      <p className="chart-note">
         {sentence(place, variable, r.trend, r.change_total, r.p, years)}
       </p>
     </div>

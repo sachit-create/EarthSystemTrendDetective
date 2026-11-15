@@ -8,6 +8,20 @@ import TrendChart from "./components/TrendChart";
 import TrendMap from "./components/TrendMap";
 import type { Dataset, PeriodInfo, VarKey } from "./types";
 
+type Theme = "light" | "dark";
+
+function LoadingSkeleton() {
+  return (
+    <div className="loading-dashboard" role="status" aria-live="polite" aria-label="Loading climate datasets">
+      <div className="skeleton-card skeleton-map"><span className="skeleton-shimmer" /></div>
+      <div className="skeleton-side">
+        <div className="skeleton-card skeleton-controls"><span className="skeleton-shimmer" /></div>
+        <div className="skeleton-card skeleton-chart"><span className="skeleton-shimmer" /></div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [periods, setPeriods] = useState<PeriodInfo[]>([]);
   const [datasets, setDatasets] = useState<Record<string, Dataset>>({});
@@ -15,6 +29,15 @@ export default function App() {
   const [variable, setVariable] = useState<VarKey>("temp");
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = localStorage.getItem("trend-detective-theme");
+    return saved === "dark" ? "dark" : "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("trend-detective-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,47 +63,82 @@ export default function App() {
   const data = datasets[periodId];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
-      <header className="border-b border-slate-800 px-5 py-4">
-        <h1 className="text-xl font-bold">Earth System Trend Detective</h1>
-        <p className="text-sm text-slate-400">
-          Detecting long-term temperature and rainfall change using NASA POWER data
-        </p>
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="topbar-inner">
+          <div className="brand-lockup">
+            <div>
+              <p className="brand-product">Earth System Trend Detective</p>
+            </div>
+          </div>
+          <div className="header-actions">
+            <span className="live-status"><i /> NASA POWER data</span>
+            <button
+              className="theme-toggle"
+              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              aria-pressed={theme === "dark"}
+              title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            >
+              <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>
+            </button>
+          </div>
+        </div>
       </header>
 
-      {error && <p className="p-5 text-red-400">Could not load data: {error}. Is the Flask backend running?</p>}
-      {!error && !data && <p className="p-5 text-slate-400">Loading…</p>}
+      <main className="page-wrap">
+        <section className="hero-row">
+          <div>
+            <p className="eyebrow">Climate signals, made clearer</p>
+            <h1>See how the Earth is changing.</h1>
+            <p className="hero-copy">Explore long-term temperature and rainfall trends across Rajasthan and the surrounding plains.</p>
+          </div>
+          <div className="hero-badge"><span className="hero-badge-dot" /> Interactive research view</div>
+        </section>
+
+      {error && <div className="notice notice-error"><strong>Could not load data.</strong> {error}. Is the Flask backend running?</div>}
+      {!error && !data && <LoadingSkeleton />}
 
       {data && (
-        <main className="grid gap-4 p-4 lg:grid-cols-[1.4fr_1fr]">
-          <section className="space-y-4">
-            <Controls
-              variable={variable}
-              onVariable={setVariable}
-              periods={periods}
-              periodId={periodId}
-              onPeriod={setPeriodId}
-            />
-            <TrendMap data={data} variable={variable} selected={selected} onSelect={setSelected} />
-          </section>
-          <section className="space-y-4">
+        <div className="dashboard-content">
+          <div className="dashboard-grid">
+            <section className="map-column">
+              <TrendMap data={data} variable={variable} selected={selected} onSelect={setSelected} theme={theme} />
+            </section>
+            <section className="controls-column">
+              <Controls
+                variable={variable}
+                onVariable={setVariable}
+                periods={periods}
+                periodId={periodId}
+                onPeriod={setPeriodId}
+                canReset={selected !== null}
+                onReset={() => setSelected(null)}
+              />
+              <TrendChart data={data} variable={variable} place={selected} theme={theme} />
+            </section>
+          </div>
+
+          <div className="summary-grid">
             <Findings data={data} />
-            <TrendChart data={data} variable={variable} place={selected} />
-            <PlacesTable
-              data={data}
-              datasets={datasets}
-              variable={variable}
-              selected={selected}
-              onSelect={setSelected}
-            />
             <About />
-          </section>
-        </main>
+          </div>
+
+          <PlacesTable
+            data={data}
+            datasets={datasets}
+            variable={variable}
+            selected={selected}
+            onSelect={setSelected}
+          />
+        </div>
       )}
 
-      <footer className="px-5 pb-6 text-xs text-slate-500">
-        Data: NASA POWER (monthly; yearly anomalies vs. each month's long-term average). Trend test: Mann-Kendall with
-        Sen's slope; significant when p &lt; 0.05.
+      </main>
+
+      <footer className="site-footer">
+        <span>Earth System Trend Detective</span>
+        <span>Data: NASA POWER · Trend test: Mann–Kendall with Sen’s slope · Significant when p &lt; 0.05</span>
       </footer>
     </div>
   );

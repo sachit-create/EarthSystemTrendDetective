@@ -11,16 +11,22 @@ interface Props {
 
 export default function PlacesTable({ data, datasets, variable, selected, onSelect }: Props) {
   return (
-    <div className="rounded-xl bg-slate-900 p-4">
-      <div className="max-h-80 overflow-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 bg-slate-900 text-slate-400">
+    <div className="table-card">
+      <div className="section-heading">
+        <div>
+          <h2 className="section-title">Place-by-place results</h2>
+          <p className="section-subtitle">Select a row to inspect its anomaly chart</p>
+        </div>
+      </div>
+      <div className="table-scroll">
+        <table className="data-table" aria-label="Climate trend results by place">
+          <thead>
             <tr>
-              <th className="py-1.5">Place</th>
-              <th>Trend</th>
-              <th>Slope/yr ({META[variable].unit})</th>
-              <th>p</th>
-              <th title="Same trend in every period?">Robust</th>
+              <th scope="col" className="py-1.5">Place</th>
+              <th scope="col">Trend</th>
+              <th scope="col">Slope/yr ({META[variable].unit})</th>
+              <th scope="col">p</th>
+              <th scope="col" title="Same trend in every period?">Robust</th>
             </tr>
           </thead>
           <tbody>
@@ -30,9 +36,18 @@ export default function PlacesTable({ data, datasets, variable, selected, onSele
                 <tr
                   key={name}
                   onClick={() => onSelect(name)}
-                  className={`cursor-pointer border-t border-slate-800 hover:bg-slate-800 ${
-                    name === selected ? "bg-slate-800" : ""
-                  }`}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(name);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View trend chart for ${name}`}
+                  aria-pressed={name === selected}
+                  className={name === selected ? "selected" : ""
+                  }
                 >
                   <td className="py-1.5">{name}</td>
                   <td>{p[variable].trend}</td>
@@ -46,8 +61,10 @@ export default function PlacesTable({ data, datasets, variable, selected, onSele
         </table>
       </div>
       <button
+        type="button"
         onClick={() => downloadCSV(data)}
-        className="mt-3 rounded-lg border border-sky-400 px-3 py-1.5 text-sm text-sky-400 hover:bg-sky-400/10"
+        className="download-button"
+        aria-label="Download climate trend results as CSV"
       >
         Download results (CSV)
       </button>
